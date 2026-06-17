@@ -1,0 +1,6 @@
+torch>=2.6.0
+transformers>=4.40.0
+datasets>=2.14.5
+tokenizers>=0.15.0
+numpy>=1.24.3
+accelerate>=1.1.0

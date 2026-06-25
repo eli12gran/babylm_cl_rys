@@ -1,5 +1,6 @@
 {
   "strategy": "TOKMIX",
+  "description": "Monolingual SentencePiece-style Unigram tokenizers were merged by weighted average of vocabulary unit probabilities, then sorted and trimmed.",
   "languages": [
     "eng",
     "nld",
@@ -19,18 +20,20 @@
     "<SEP>",
     "<MASK>"
   ],
-  "protected_base_characters_size": 6442,
+  "sentencepiece_replacement": "▁",
+  "pre_tokenizer": "Metaspace/SentencePiece-style, not ByteLevel",
   "per_language_non_special_vocab_sizes": {
     "eng": 23995,
     "nld": 23995,
     "zho": 23995
   },
-  "union_non_special_vocab_size": 69223,
+  "union_non_special_vocab_size": 69221,
+  "protected_base_pieces_size": 6442,
   "selected_non_special_vocab_size": 47995,
   "overlap_summary": {
     "tokens_seen_in_3_language(s)": 2,
-    "tokens_seen_in_2_language(s)": 2758,
-    "tokens_seen_in_1_language(s)": 66463
+    "tokens_seen_in_2_language(s)": 2760,
+    "tokens_seen_in_1_language(s)": 66459
   },
   "config": {
     "languages": [
@@ -58,10 +61,10 @@
     "cls_token": "<CLS>",
     "sep_token": "<SEP>",
     "mask_token": "<MASK>",
-    "output_dir": "./tokenizers_tokmix",
-    "sample_size_for_estimation": 100000,
+    "output_dir": "./tokenizers_tokmix_fixed",
     "tokmix_weights": null,
-    "prob_floor": 1e-300
+    "prob_floor": 1e-300,
+    "sentencepiece_replacement": "▁"
   },
   "budget_stats": {
     "eng": {
@@ -94,5 +97,10 @@
       "characters": 49284627,
       "utf8_bytes_per_character": 2.8258656598943115
     }
+  },
+  "output_files": {
+    "tokmix_tokenizer_json": "./tokenizers_tokmix_fixed/tokmix_tokenizer.json",
+    "hf_tokenizer_dir": "./tokenizers_tokmix_fixed/hf_tokmix_tokenizer",
+    "monolingual_tokenizers_dir": "./tokenizers_tokmix_fixed/monolingual_tokenizers"
   }
 }

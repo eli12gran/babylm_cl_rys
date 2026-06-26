@@ -21,7 +21,7 @@ from transformers import (
     set_seed,
 )
 
-from tokenizer_utilities import NOOVERLAPTokenizer, SPECIAL_TOKENS
+from tokenizer_utilities_nooverlap import NOOVERLAPTokenizer, SPECIAL_TOKENS
 
 
 os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")

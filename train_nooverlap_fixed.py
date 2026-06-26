@@ -94,11 +94,13 @@ LANGUAGE_TAGS = {
     "zho": "<ZH>",
 }
 
+DEFAULT_TOKENIZER_DIR = "./tokenizers_nooverlap_fixed"
+LANGUAGES = ("eng", "nld", "zho")
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train GPT-2 with correct NOOVERLAP tokenization.")
 
-    parser.add_argument("--tokenizer_dir", type=str, default=".", help="Directory containing tokenizer_eng/nld/zho.json.")
+    parser.add_argument("--tokenizer_dir", type=str, default=DEFAULT_TOKENIZER_DIR, help="Directory containing tokenizer_eng/nld/zho.json.")
     parser.add_argument("--output_dir", type=str, default=TRAINING_CONFIG["output_dir"])
     parser.add_argument("--babylm_checkpoint_dir", type=str, default=TRAINING_CONFIG["babylm_checkpoint_dir"])
     parser.add_argument("--detailed_checkpoint_dir", type=str, default=TRAINING_CONFIG["detailed_checkpoint_dir"])

@@ -100,7 +100,15 @@ LANGUAGES = ("eng", "nld", "zho")
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Train GPT-2 with correct NOOVERLAP tokenization.")
 
-    parser.add_argument("--tokenizer_dir", type=str, default=DEFAULT_TOKENIZER_DIR, help="Directory containing tokenizer_eng/nld/zho.json.")
+    parser.add_argument(
+    "--tokenizer_dir",
+    type=str,
+    default=DEFAULT_TOKENIZER_DIR,
+    help=(
+        "Directory containing nested NOOVERLAP tokenizers, e.g. "
+        "tokenizer_eng/tokenizer_eng.json, tokenizer_nld/tokenizer_nld.json, "
+        "and tokenizer_zho/tokenizer_zho.json."
+    ),)
     parser.add_argument("--output_dir", type=str, default=TRAINING_CONFIG["output_dir"])
     parser.add_argument("--babylm_checkpoint_dir", type=str, default=TRAINING_CONFIG["babylm_checkpoint_dir"])
     parser.add_argument("--detailed_checkpoint_dir", type=str, default=TRAINING_CONFIG["detailed_checkpoint_dir"])
@@ -140,22 +148,14 @@ def safe_float(value):
 # TOKENIZER LOADING AND CORRECT NOOVERLAP COMBINATION
 # ============================================================================
 
+
 def load_monolingual_tokenizers(tokenizer_dir: str = DEFAULT_TOKENIZER_DIR) -> Dict[str, Tokenizer]:
     logger.info("Loading monolingual Unigram tokenizers")
 
     tokenizers = {}
 
     for lang in LANGUAGES:
-        tokenizer_path = os.path.join(
-            tokenizer_dir,
-            f"tokenizer_{lang}",
-            f"tokenizer_{lang}.json",
-        )
-
-        if not os.path.exists(tokenizer_path):
-            raise FileNotFoundError(
-                f"Tokenizer not found for {lang}: {tokenizer_path}"
-            )
+        tokenizer_path = get_monolingual_tokenizer_path(tokenizer_dir, lang)
 
         tokenizers[lang] = Tokenizer.from_file(tokenizer_path)
         vocab_size = len(tokenizers[lang].get_vocab())
@@ -163,6 +163,26 @@ def load_monolingual_tokenizers(tokenizer_dir: str = DEFAULT_TOKENIZER_DIR) -> D
         logger.info(f"✓ Loaded {lang}: {vocab_size:,} local tokens from {tokenizer_path}")
 
     return tokenizers
+
+def get_monolingual_tokenizer_path(tokenizer_dir: str, lang: str) -> str:
+    """
+    Return the path to the monolingual tokenizer file for the current repo layout.
+
+    Expected layout:
+        tokenizers_nooverlap_fixed/tokenizer_eng/tokenizer_eng.json
+        tokenizers_nooverlap_fixed/tokenizer_nld/tokenizer_nld.json
+        tokenizers_nooverlap_fixed/tokenizer_zho/tokenizer_zho.json
+    """
+    tokenizer_path = os.path.join(
+        tokenizer_dir,
+        f"tokenizer_{lang}",
+        f"tokenizer_{lang}.json",
+    )
+
+    if not os.path.exists(tokenizer_path):
+        raise FileNotFoundError(f"Tokenizer not found for {lang}: {tokenizer_path}")
+
+    return tokenizer_path
 
 
 def create_nooverlap_tokenizer(tokenizers: Dict[str, Tokenizer]) -> NOOVERLAPTokenizer:
@@ -475,26 +495,36 @@ class TokenCounterCallback(TrainerCallback):
     def _copy_optional_tokenizer_assets(self, save_dir: str):
         """
         Copy files needed for reconstruction/evaluation.
-        tokenization_nooverlap.py is optional; it is copied if present.
+
+        The repo stores tokenizer files nested by language, but each BabyLM
+        checkpoint should receive flat tokenizer filenames for easier packaging:
+            tokenizer_eng.json
+            tokenizer_nld.json
+            tokenizer_zho.json
         """
-        asset_names = [
-            "tokenizer_eng.json",
-            "tokenizer_nld.json",
-            "tokenizer_zho.json",
-            "tokenizer_utilities.py",
+        copied = []
+
+        for lang in LANGUAGES:
+            src = get_monolingual_tokenizer_path(self.tokenizer_asset_dir, lang)
+            dst_name = f"tokenizer_{lang}.json"
+            dst = os.path.join(save_dir, dst_name)
+
+            shutil.copy2(src, dst)
+            copied.append(dst_name)
+
+        optional_assets = [
+            "metadata.json",
+            "tokenizer_utilities_nooverlap.py",
             "tokenization_nooverlap.py",
         ]
 
-        copied = []
-        for name in asset_names:
+        for name in optional_assets:
             src = os.path.join(self.tokenizer_asset_dir, name)
             dst = os.path.join(save_dir, name)
 
             if os.path.exists(src):
                 shutil.copy2(src, dst)
                 copied.append(name)
-            elif name != "tokenization_nooverlap.py":
-                logger.warning(f"Tokenizer asset not found, not copied: {src}")
 
         return copied
 
@@ -718,7 +748,7 @@ def setup_training(
         save_total_limit=5,
         remove_unused_columns=False,
         report_to=[],
-        save_safetensors=True,
+        #save_safetensors=True,
     )
 
     pad_token_id = nooverlap_tokenizer.pad_token_id
@@ -806,11 +836,17 @@ def save_final_bundle(
     nooverlap_tokenizer.save(final_dir)
 
     copied = []
+
+    for lang in LANGUAGES:
+        src = get_monolingual_tokenizer_path(tokenizer_asset_dir, lang)
+        dst_name = f"tokenizer_{lang}.json"
+
+        shutil.copy2(src, os.path.join(final_dir, dst_name))
+        copied.append(dst_name)
+
     for name in [
-        "tokenizer_eng.json",
-        "tokenizer_nld.json",
-        "tokenizer_zho.json",
-        "tokenizer_utilities.py",
+        "metadata.json",
+        "tokenizer_utilities_nooverlap.py",
         "tokenization_nooverlap.py",
     ]:
         src = os.path.join(tokenizer_asset_dir, name)

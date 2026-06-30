@@ -19,16 +19,8 @@ from transformers import (
     TrainingArguments,
     set_seed,
 )
+from transformers import ModernBertConfig, ModernBertForMaskedLM
 
-try:
-    from transformers import ModernBertConfig, ModernBertForMaskedLM
-except ImportError as exc:
-    raise ImportError(
-        "ModernBERT is not available in your installed transformers version. "
-        "Install or upgrade transformers, for example:\n\n"
-        "  python -m pip install -U transformers accelerate tokenizers datasets safetensors\n\n"
-        "Then rerun this script."
-    ) from exc
 
 from tokenizer_utilities_nooverlap import NOOVERLAPTokenizer, SPECIAL_TOKENS
 
@@ -45,13 +37,6 @@ logger = logging.getLogger(__name__)
 
 TRAINING_CONFIG = {
     "model_name": "modernbert",
-
-    # ModernBERT-base-like defaults:
-    # hidden_size=768, num_attention_heads=12, num_hidden_layers=22,
-    # intermediate_size=1152.
-    #
-    # This is a different architecture from GPT-2, so these are not meant to
-    # match GPT-2 layer-for-layer. The DATA selection remains matched.
     "hidden_size": 768,
     "num_hidden_layers": 22,
     "num_attention_heads": 12,
@@ -72,8 +57,6 @@ TRAINING_CONFIG = {
 
     "data": {
         "max_seq_length": 256,
-        # Same target used in your GPT-2 NOOVERLAP/TOKMIX scripts:
-        # 100M adjusted BabyLM units / 3 languages.
         "adjusted_budget_per_lang": 33_333_333,
         "tokenize_batch_size": 1000,
         "chunk_batch_size": 1000,
